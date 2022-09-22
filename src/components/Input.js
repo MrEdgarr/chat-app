@@ -21,9 +21,9 @@ const Input = () => {
     if (img) {
       const storageRef = ref(storage, uuid());
       const uploadTask = uploadBytesResumable(storageRef, img);
-      const a = uploadTask.on(
+      uploadTask.on(
         (error) => {
-          // setErr(true)
+          console.log(error)
         },
         () => {
           getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
