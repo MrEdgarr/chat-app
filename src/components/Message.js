@@ -11,6 +11,7 @@ const Message = ({message}) => {
     ref.current?.scrollIntoView({ behavior: 'smooth' })
   }, [message])
 
+  console.log(message.img);
   return (
     <div ref={ref} className={`message ${message.senderId === currentUser.uid && "owner"}`}>
       <div className='messageInfo'>

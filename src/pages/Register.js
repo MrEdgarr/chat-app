@@ -9,9 +9,11 @@ import { useNavigate, Link } from 'react-router-dom';
 
 const Register = () => {
     const [err, setErr] = useState(false)
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
+        setLoading(true);
         e.preventDefault()
         const displayName = e.target[0].value;
         const email = e.target[1].value;
@@ -21,40 +23,41 @@ const Register = () => {
 
 
         try {
+            //Create user
             const res = await createUserWithEmailAndPassword(auth, email, password);
-            // await setDoc(doc(db, "users", res.user.uid), {
-            //     name: "Los Angeles",
-            //     state: "CA",
-            //     country: "USA"
-            // });
 
-            const storageRef = ref(storage, displayName);
+            //Create a unique image name
+            const date = new Date().getTime();
+            const storageRef = ref(storage, `${displayName + date}`);
 
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            uploadTask.on(
-                (error) => {
-                    setErr(true)
-                },
-                () => {
-                    getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+            await uploadBytesResumable(storageRef, file).then(() => {
+                getDownloadURL(storageRef).then(async (downloadURL) => {
+                    try {
+                        //Update profile
                         await updateProfile(res.user, {
                             displayName,
                             photoURL: downloadURL,
                         });
+                        //create user on firestore
                         await setDoc(doc(db, "users", res.user.uid), {
                             uid: res.user.uid,
                             displayName,
                             email,
                             photoURL: downloadURL,
                         });
+                        //create empty user chats on firestore
                         await setDoc(doc(db, 'userChat', res.user.uid), {});
                         navigate('/');
-                    });
-                }
-            );
+                    } catch (error) {
+                        console.log(error);
+                        setErr(true);
+                        setLoading(false);
+                    }
+                });
+            })
         } catch (error) {
             setErr(true);
+            setLoading(false)
         }
     }
     return (
@@ -72,7 +75,8 @@ const Register = () => {
                         <span>Add an avatar</span>
                     </label>
                     <button>Sign up</button>
-                    {err && <span>Something went wrong</span>}
+                    {loading && "Uploading and compressing the image please wait..."}
+                    {err && <span style={{ color: 'red' }}>Something went wrong</span>}
                 </form>
                 <p>You do have an account? <Link to='/login'>Login</Link></p>
             </div>
